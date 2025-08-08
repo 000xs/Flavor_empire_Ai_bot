@@ -3,9 +3,7 @@ import requests
 from dotenv import load_dotenv
 import json
 import base64
-from appwrite.client import Client
-from appwrite.services.storage import Storage
-from appwrite.input_file import InputFile
+ 
 from urllib.parse import urljoin
 import time
 
@@ -17,20 +15,7 @@ class Publisher:
         self.HASHNODE_PAT = os.getenv("HASHNODE_PAT")  # Personal Access Token
         self.PUBLICATION_ID = os.getenv("HASHNODE_PUB_ID")
         
-        # Appwrite credentials
-        self.APPWRITE_ENDPOINT = os.getenv("APPWRITE_ENDPOINT")
-        self.APPWRITE_PROJECT_ID = os.getenv("APPWRITE_PROJECT_ID")
-        self.APPWRITE_API_KEY = os.getenv("APPWRITE_API_KEY")
-        self.APPWRITE_BUCKET_ID = os.getenv("APPWRITE_BUCKET_ID")
-        
-        # Initialize Appwrite client
-        self.client = Client()
-        self.client.set_endpoint(self.APPWRITE_ENDPOINT)
-        self.client.set_project(self.APPWRITE_PROJECT_ID)
-        self.client.set_key(self.APPWRITE_API_KEY)
-        
-        # Initialize storage service
-        self.storage = Storage(self.client)
+ 
         
         # GraphQL queries
         self.create_draft_query = """
@@ -91,69 +76,7 @@ class Publisher:
             print("Error fetching tags:", data["errors"])
             return []
 
-    def get_appwrite_file_url(self, file_id):
-        """Construct the public URL for an Appwrite file"""
-        endpoint = self.APPWRITE_ENDPOINT.rstrip('/v1').rstrip('/')
-        return f"{endpoint}/v1/storage/buckets/{self.APPWRITE_BUCKET_ID}/files/{file_id}/view?project={self.APPWRITE_PROJECT_ID}"
-
-    def upload_image_to_appwrite(self, image_path=None, image_data=None, mime_type="image/png"):
-        """Upload an image to Appwrite storage and return the URL"""
-        try:
-            if not all([self.APPWRITE_ENDPOINT, self.APPWRITE_PROJECT_ID, 
-                       self.APPWRITE_API_KEY, self.APPWRITE_BUCKET_ID]):
-                print("❌ Appwrite credentials not properly configured")
-                return None
-                
-            if image_path and os.path.exists(image_path):
-                with open(image_path, "rb") as image_file:
-                    file_data = image_file.read()
-                
-                if mime_type == "image/png":
-                    file_extension = os.path.splitext(image_path)[1].lower()
-                    if file_extension == '.jpg' or file_extension == '.jpeg':
-                        mime_type = "image/jpeg"
-                    elif file_extension == '.gif':
-                        mime_type = "image/gif"
-                
-                filename = os.path.basename(image_path)
-            elif image_data:
-                file_data = image_data
-                filename = f"image_{int(time.time())}.{'png' if mime_type == 'image/png' else 'jpg'}"
-            else:
-                print("❌ No image path or image data provided")
-                return None
-            
-            input_file = InputFile.from_bytes(
-                file_data,
-                filename=filename,
-                mime_type=mime_type
-            )
-            
-            response = self.storage.create_file(
-                bucket_id=self.APPWRITE_BUCKET_ID,
-                file_id='unique()',
-                file=input_file,
-                permissions=['read("any")']
-            )
-            
-            if not response:
-                print("❌ Appwrite upload failed: No response")
-                return None
-                
-            file_id = response.get('$id')
-            if not file_id:
-                print("❌ Failed to get file ID from Appwrite response")
-                return None
-                
-            image_url = self.get_appwrite_file_url(file_id)
-            
-            print(f"✅ Image uploaded to Appwrite: {image_url}")
-            return image_url
-                
-        except Exception as e:
-            print(f"❌ Error uploading image to Appwrite: {str(e)}")
-            return None
-
+    
     def publish_hash_node(self, content, title="The Ultimate Chewy Chocolate Chip Cookies", image_url=None):
         """Publish content to Hashnode with optional image uploaded to Appwrite"""
         MARKDOWN = content
