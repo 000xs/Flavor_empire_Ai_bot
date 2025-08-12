@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-from api.scheduled_call import _actual_handler_logic
+from .api.scheduled_call import _actual_handler_logic
 
 app = Flask(__name__)
 
