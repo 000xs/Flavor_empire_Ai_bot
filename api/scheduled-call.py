@@ -84,9 +84,13 @@ load_dotenv()
 #     return uplode_image(image_bytes)
   
 def genrate_blog_post_idea():
+    zai_api_key = os.getenv('ZAI_API_KEY')
+    if not zai_api_key:
+        print("❌ Error: ZAI_API_KEY environment variable not set for blog post idea generation.")
+        return None
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.getenv('ZAI_API_KEY')}",
+        "Authorization": f"Bearer {zai_api_key}",
     }
     data = {
         "model": "glm-4.5-flash",
@@ -94,16 +98,30 @@ def genrate_blog_post_idea():
         "temperature": 0.7,
         "top_p": 0.8,
     }
-    response = requests.post(
-        "https://api.z.ai/api/paas/v4/chat/completions", headers=headers, json=data
-    )
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    try:
+        response = requests.post(
+            "https://api.z.ai/api/paas/v4/chat/completions", headers=headers, json=data
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error generating blog post idea: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"❌ Error decoding JSON for blog post idea: {e}")
+        return None
 
 def generate_blog_post(idea):
+    if not idea: # Check if idea is valid before proceeding
+        print("❌ Cannot generate blog post: idea is missing.")
+        return None
+    zai_api_key = os.getenv('ZAI_API_KEY')
+    if not zai_api_key:
+        print("❌ Error: ZAI_API_KEY environment variable not set for blog post generation.")
+        return None
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.getenv('ZAI_API_KEY')}",
+        "Authorization": f"Bearer {zai_api_key}",
     }
     data = {
         "model": "glm-4.5-flash",
@@ -111,48 +129,72 @@ def generate_blog_post(idea):
         "temperature": 0.7,
         "top_p": 0.8,
     }
-    response = requests.post(
-        "https://api.z.ai/api/paas/v4/chat/completions", headers=headers, json=data
-    )
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    try:
+        response = requests.post(
+            "https://api.z.ai/api/paas/v4/chat/completions", headers=headers, json=data
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error generating blog post: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"❌ Error decoding JSON for blog post: {e}")
+        return None
 
 # Renamed the original handler logic
 def _actual_handler_logic():
-    # Get current time in UTC
-    now = datetime.utcnow()
-    
-    # Generate idea
-    idea = genrate_blog_post_idea()
-    print(f"Generated blog post idea: {idea}")
-    
-    # Generate blog post
-    post = generate_blog_post(idea)
-    print("Generated blog post:")
-    print(post)
-    
-    # Generate food image
-    # link = generate_food_image(idea, post)
-    # print(f"Image uploaded to Firebase: {link}")
-    
-    # Publish blog post
-    publisher = Publisher()
-    result = publisher.publish_hash_node(
-        content=post,
-        title=idea,
-        image_url="https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?q=80&w=464&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    )
-    
-    if not result == None:
-        print("\n🎉 Blog post published successfully!")
+    try:
+        # Get current time in UTC
+        now = datetime.utcnow()
+        
+        # Generate idea
+        idea = genrate_blog_post_idea()
+        if not idea:
+            return {
+                "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR,
+                "body": {"message": "Failed to generate blog post idea."}
+            }
+        print(f"Generated blog post idea: {idea}")
+        
+        # Generate blog post
+        post = generate_blog_post(idea)
+        if not post:
+            return {
+                "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR,
+                "body": {"message": "Failed to generate blog post content."}
+            }
+        print("Generated blog post:")
+        print(post)
+        
+        # Generate food image
+        # link = generate_food_image(idea, post)
+        # print(f"Image uploaded to Firebase: {link}")
+        
+        # Publish blog post
+        publisher = Publisher()
+        result = publisher.publish_hash_node(
+            content=post,
+            title=idea,
+            image_url="https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?q=80&w=464&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        )
+        
+        if not result == None:
+            print("\n🎉 Blog post published successfully!")
+            return {
+                "statusCode": HTTPStatus.OK,
+                "body": {"message" : "Blog post published successfully!" , "data" : result},
+            }
         return {
-            "statusCode": HTTPStatus.OK,
-            "body": {"message" : "Blog post published successfully!" , "data" : result},
+            "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR,
+            "body": {"message": "Failed to publish blog post."}
         }
-    return {
-        "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR,
-        "body": {"message": "Failed to publish blog post."}
-    }
+    except Exception as e:
+        print(f"❌ An unexpected error occurred in _actual_handler_logic: {e}")
+        return {
+            "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR,
+            "body": {"message": f"An unexpected error occurred: {str(e)}"}
+        }
 
 # New class-based handler
 class handler(BaseHTTPRequestHandler): # Vercel expects 'handler' as the entry point

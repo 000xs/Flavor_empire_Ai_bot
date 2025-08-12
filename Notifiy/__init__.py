@@ -58,22 +58,30 @@ class Publisher:
             }
         }
         """
-        response = requests.post(
-            "https://gql.hashnode.com/",
-            headers={
-                "Authorization": self.HASHNODE_PAT,
-                "Content-Type": "application/json",
-            },
-            json={"query": query},
-        )
-        data = response.json()
-        if "errors" not in data:
-            tags = []
-            for edge in data.get("data", {}).get("tag", {}).get("edges", []):
-                tags.append(edge["node"])
-            return tags
-        else:
-            print("Error fetching tags:", data["errors"])
+        try:
+            response = requests.post(
+                "https://gql.hashnode.com/",
+                headers={
+                    "Authorization": self.HASHNODE_PAT,
+                    "Content-Type": "application/json",
+                },
+                json={"query": query},
+            )
+            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            data = response.json()
+            if "errors" not in data:
+                tags = []
+                for edge in data.get("data", {}).get("tag", {}).get("edges", []):
+                    tags.append(edge["node"])
+                return tags
+            else:
+                print("Error fetching tags:", data["errors"])
+                return []
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Network or API error fetching tags: {e}")
+            return []
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON decode error fetching tags: {e}")
             return []
 
     
@@ -81,11 +89,17 @@ class Publisher:
         """Publish content to Hashnode with optional image uploaded to Appwrite"""
         MARKDOWN = content
         
-         
-            
         cover_image_url = image_url
         banner_image_url = image_url 
         
+        if not self.HASHNODE_PAT:
+            print("❌ Error: HASHNODE_PAT environment variable not set")
+            return None
+            
+        if not self.PUBLICATION_ID:
+            print("❌ Error: HASHNODE_PUB_ID environment variable not set")
+            return None
+
         print("\nFetching available tags...")
         available_tags = self.get_available_tags()
         if available_tags:
@@ -131,69 +145,66 @@ class Publisher:
             }
             print(f"✅ Banner image set: {banner_image_url}")
       
-        if not self.HASHNODE_PAT:
-            print("❌ Error: HASHNODE_PAT environment variable not set")
-            return None
-            
-        if not self.PUBLICATION_ID:
-            print("❌ Error: HASHNODE_PUB_ID environment variable not set")
-            return None
-            
         print(f"\nUsing Publication ID: {self.PUBLICATION_ID}")
         
         print("\nCreating draft...")
-        response = requests.post(
-            "https://gql.hashnode.com/",
-            headers={"Authorization": self.HASHNODE_PAT, "Content-Type": "application/json"},
-            json={"query": self.create_draft_query, "variables": create_draft_variables},
-        )
-        
-        data = response.json()
-        
-        if "errors" in data:
-            print("❌ Error creating draft:", json.dumps(data["errors"], indent=2))
-            return None
+        try:
+            response = requests.post(
+                "https://gql.hashnode.com/",
+                headers={"Authorization": self.HASHNODE_PAT, "Content-Type": "application/json"},
+                json={"query": self.create_draft_query, "variables": create_draft_variables},
+            )
+            response.raise_for_status()
+            data = response.json()
             
-        draft_data = data.get("data", {}).get("createDraft", {}).get("draft")
-        if not draft_data:
-            print("❌ Unexpected response structure:", json.dumps(data, indent=2))
-            return None
+            if "errors" in data:
+                print("❌ Error creating draft:", json.dumps(data["errors"], indent=2))
+                return None
+                
+            draft_data = data.get("data", {}).get("createDraft", {}).get("draft")
+            if not draft_data:
+                print("❌ Unexpected response structure:", json.dumps(data, indent=2))
+                return None
+                
+            print("\n✅ Draft created successfully!")
+            print(f"Draft ID: {draft_data['id']}")
+            print(f"Title: {draft_data['title']}")
+            print(f"Slug: {draft_data['slug']}")
             
-        print("\n✅ Draft created successfully!")
-        print(f"Draft ID: {draft_data['id']}")
-        print(f"Title: {draft_data['title']}")
-        print(f"Slug: {draft_data['slug']}")
-        
-        print("\nPublishing draft...")
-        publish_variables = {
-            "input": {
-                "draftId": draft_data["id"]
+            print("\nPublishing draft...")
+            publish_variables = {
+                "input": {
+                    "draftId": draft_data["id"]
+                }
             }
-        }
-        
-        response = requests.post(
-            "https://gql.hashnode.com/",
-            headers={"Authorization": self.HASHNODE_PAT, "Content-Type": "application/json"},
-            json={"query": self.publish_draft_query, "variables": publish_variables},
-        )
-        
-        data = response.json()
-        
-        if "errors" in data:
-            print("❌ Error publishing draft:", json.dumps(data["errors"], indent=2))
-            return None
             
-        post_data = data.get("data", {}).get("publishDraft", {}).get("post")
-        if not post_data:
-            print("❌ Unexpected response structure:", json.dumps(data, indent=2))
-            return None
+            response = requests.post(
+                "https://gql.hashnode.com/",
+                headers={"Authorization": self.HASHNODE_PAT, "Content-Type": "application/json"},
+                json={"query": self.publish_draft_query, "variables": publish_variables},
+            )
+            response.raise_for_status()
+            data = response.json()
             
-        print("\n✅ Post published successfully!")
-        print(f"Post ID: {post_data['id']}")
-        print(f"Title: {post_data['title']}")
-        print(f"Slug: {post_data['slug']}")
-        print(f"URL: {post_data['url']}")
-        
-        return post_data
-
- 
+            if "errors" in data:
+                print("❌ Error publishing draft:", json.dumps(data["errors"], indent=2))
+                return None
+                
+            post_data = data.get("data", {}).get("publishDraft", {}).get("post")
+            if not post_data:
+                print("❌ Unexpected response structure:", json.dumps(data, indent=2))
+                return None
+                
+            print("\n✅ Post published successfully!")
+            print(f"Post ID: {post_data['id']}")
+            print(f"Title: {post_data['title']}")
+            print(f"Slug: {post_data['slug']}")
+            print(f"URL: {post_data['url']}")
+            
+            return post_data
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Network or API error during Hashnode operation: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON decode error during Hashnode operation: {e}")
+            return None
