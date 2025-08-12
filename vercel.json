@@ -9,8 +9,16 @@
       "schedule": "0 18 * * *"
     }
   ],
-
-  "app.py": {
-    "runtime": "now-python@3.9"
-  }
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ]
 }
