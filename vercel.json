@@ -9,12 +9,14 @@
       "schedule": "0 18 * * *"
     }
   ],
-  "builds": [
-    {
-      "src": "app.py",
-      "use": "@vercel/python"
+  "functions": {
+    "api/scheduled-call.py": {
+      "runtime": "python@3.9"
+    },
+    "app.py": {
+      "runtime": "python@3.9"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/(.*)",
