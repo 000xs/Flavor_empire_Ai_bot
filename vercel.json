@@ -8,5 +8,11 @@
       "path": "/api/scheduled-call",
       "schedule": "0 18 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/scheduled-call.py": {
+      "runtime": "python3.10",
+      "handler": "api/scheduled-call.handler"
+    }
+  }
 }
