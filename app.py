@@ -1,4 +1,10 @@
+import sys
+import os
 from flask import Flask, jsonify
+
+# Add the current directory to the Python path
+sys.path.append(os.path.dirname(__file__))
+
 from api.scheduled_call import _actual_handler_logic
 
 app = Flask(__name__)
