@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 from prompts import new_blog_post_idea, blog_post_prompt, image_prompt
 import time
 from Notifiy import Publisher
- 
+from http.server import BaseHTTPRequestHandler # New import
+import json # New import
 
 load_dotenv()
 
@@ -116,7 +117,8 @@ def generate_blog_post(idea):
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
-def handler(request):
+# Renamed the original handler logic
+def _actual_handler_logic():
     # Get current time in UTC
     now = datetime.utcnow()
     
@@ -142,10 +144,27 @@ def handler(request):
     )
     
     if not result == None:
-        print("\n🎉 Blog post published successfully!"
-              )
+        print("\n🎉 Blog post published successfully!")
         return {
             "statusCode": HTTPStatus.OK,
             "body": {"message" : "Blog post published successfully!" , "data" : result},
         }
+    return {
+        "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR,
+        "body": {"message": "Failed to publish blog post."}
+    }
+
+# New class-based handler
+class handler(BaseHTTPRequestHandler): # Vercel expects 'handler' as the entry point
+    def do_GET(self):
+        response_data = _actual_handler_logic()
         
+        self.send_response(response_data["statusCode"])
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response_data["body"]).encode("utf-8"))
+
+    def do_POST(self):
+        # For cron jobs, usually GET is sufficient, but good to have POST too if needed.
+        # For this specific cron job, it's likely only GET is relevant.
+        self.do_GET() # Re-use GET logic for POST if the functionality is the same.
