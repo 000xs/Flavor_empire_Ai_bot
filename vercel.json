@@ -11,10 +11,10 @@
   ],
   "functions": {
     "api/scheduled-call.py": {
-      "runtime": "now-python@3.9"
+      "runtime": "python3.9"
     },
     "app.py": {
-      "runtime": "now-python@3.9"
+      "runtime": "python3.9"
     }
   },
   "routes": [
