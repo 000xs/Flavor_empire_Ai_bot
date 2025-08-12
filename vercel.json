@@ -14,7 +14,7 @@
       "runtime": "now-python@3.9"
     },
     "app.py": {
-      "runtime": "python@3.9"
+      "runtime": "now-python@3.9"
     }
   },
   "routes": [
