@@ -11,7 +11,10 @@
   ],
   "functions": {
     "api/**/*.py": {
-      "runtime": "@vercel/python@3.0.0"
+      "runtime": "@vercel/python@4.0.0",
+      "runtimeConfig": {
+        "pythonVersion": "3.11"
+      }
     }
   },
   "routes": [
