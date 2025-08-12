@@ -11,13 +11,17 @@
   ],
   "functions": {
     "api/scheduled-call.py": {
-      "runtime": "python3.9"
+      "runtime": "@vercel/python@3.0.0"
     },
     "app.py": {
-      "runtime": "python3.9"
+      "runtime": "@vercel/python@3.0.0"
     }
   },
   "routes": [
+    {
+      "src": "/api/scheduled-call",
+      "dest": "api/scheduled-call.py"
+    },
     {
       "src": "/(.*)",
       "dest": "app.py"
