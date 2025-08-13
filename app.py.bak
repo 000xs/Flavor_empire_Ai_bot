@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 import os
 import requests
 import json
@@ -206,35 +206,6 @@ def scheduled_call():
 
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
-        return jsonify({
-            "error": f"An unexpected error occurred: {str(e)}"
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
-
-@app.route("/api/upload-image", methods=["POST"])
-def upload_image():
-    try:
-        image_bytes = request.get_data() # Get raw bytes from the request body
-
-        if not image_bytes:
-            return jsonify({"error": "No image bytes provided in the request body"}), HTTPStatus.BAD_REQUEST
-        
-        # Generate a unique filename. Assuming the uploaded image is a JPG.
-        file_name = f"uploaded-image-{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
-        
-        image_url = upload_image_to_r2(image_bytes, file_name)
-
-        if image_url:
-            return jsonify({
-                "message": "Image uploaded successfully!",
-                "image_url": image_url
-            }), HTTPStatus.OK
-        else:
-            return jsonify({
-                "error": "Failed to upload image to R2"
-            }), HTTPStatus.INTERNAL_SERVER_ERROR
-
-    except Exception as e:
-        print(f"❌ Unexpected error during image upload: {e}")
         return jsonify({
             "error": f"An unexpected error occurred: {str(e)}"
         }), HTTPStatus.INTERNAL_SERVER_ERROR
