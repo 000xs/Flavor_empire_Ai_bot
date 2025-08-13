@@ -43,48 +43,6 @@ class Publisher:
         }
         """
 
-    def get_available_tags(self):
-        """Fetch available tags from Hashnode"""
-        query = """
-        query {
-            tag(first: 20) {
-                edges {
-                    node {
-                        id
-                        name
-                        slug
-                    }
-                }
-            }
-        }
-        """
-        try:
-            response = requests.post(
-                "https://gql.hashnode.com/",
-                headers={
-                    "Authorization": self.HASHNODE_PAT,
-                    "Content-Type": "application/json",
-                },
-                json={"query": query},
-            )
-            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
-            data = response.json()
-            if "errors" not in data:
-                tags = []
-                for edge in data.get("data", {}).get("tag", {}).get("edges", []):
-                    tags.append(edge["node"])
-                return tags
-            else:
-                print("Error fetching tags:", data["errors"])
-                return []
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Network or API error fetching tags: {e}")
-            return []
-        except json.JSONDecodeError as e:
-            print(f"❌ JSON decode error fetching tags: {e}")
-            return []
-
-    
     def publish_hash_node(self, content, title="The Ultimate Chewy Chocolate Chip Cookies", image_url=None):
         """Publish content to Hashnode with optional image uploaded to Appwrite"""
         MARKDOWN = content
@@ -100,30 +58,11 @@ class Publisher:
             print("❌ Error: HASHNODE_PUB_ID environment variable not set")
             return None
 
-        print("\nFetching available tags...")
-        available_tags = self.get_available_tags()
-        if available_tags:
-            print("Available tags:")
-            for tag in available_tags:
-                print(f"  {tag['name']}: {tag['id']}")
-            
-            relevant_tags = []
-            tag_names = ["desserts", "baking", "cookies", "recipes"]
-            for tag in available_tags:
-                if tag["name"].lower() in tag_names:
-                    relevant_tags.append({"id": tag["id"]})
-            
-            relevant_tags = relevant_tags[:3]
-            print(f"\nUsing tags: {[tag['id'] for tag in relevant_tags]}")
-        else:
-            relevant_tags = []
-            print("No tags available or error fetching tags")
-        
         create_draft_variables = {
             "input": {
                 "title": title,
                 "contentMarkdown": MARKDOWN,
-                "tags": relevant_tags,   
+                "tags": [],   
                 "publicationId": self.PUBLICATION_ID,
                 "settings": {
                     "delist": False,

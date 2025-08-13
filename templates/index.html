@@ -39,14 +39,11 @@
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    const posts = await response.json();
+                    const responseData = await response.json();
+                    const posts = responseData[1]; // Access the second element of the array
 
                     if (!Array.isArray(posts)) {
-                        // If it's not an array, it might be an error object from Flask's jsonify({"error": ...})
-                        if (posts && posts.error) {
-                            throw new Error(`Server error: ${posts.error}`);
-                        }
-                        throw new Error("Invalid data format received from server. Expected an array of posts.");
+                        throw new Error("Invalid data format received from server.");
                     }
 
                     postsContainer.innerHTML = ''; // Clear existing posts
