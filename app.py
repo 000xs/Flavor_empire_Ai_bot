@@ -182,7 +182,7 @@ def scheduled_call():
         image_url = generate_food_image(idea, post)
         if not image_url:
             print("⚠️ Could not generate image. Using a default.")
-            image_url = "https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?q=80&w=464&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            image_url = "https://cdn.image.sniplyx.xyz/uploaded-image-20250813104033.jpg"
 
 
         # Publish blog post

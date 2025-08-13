@@ -48,7 +48,7 @@ def upload_image_to_r2(image_bytes, file_name):
         
         # Construct the public URL
         account_id = os.environ['R2_ACCOUNT_ID']
-        public_url = f"https://pub-{account_id}.r2.dev/{file_name}"
+        public_url = f"https://cdn.image.sniplyx.xyz/{file_name}"
         
         print(f"Successfully uploaded {file_name} to R2.")
         return public_url
