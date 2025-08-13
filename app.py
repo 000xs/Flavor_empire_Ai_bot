@@ -7,7 +7,7 @@ from http import HTTPStatus
 from dotenv import load_dotenv
 from prompts import new_blog_post_idea, blog_post_prompt, image_prompt
 from Notifiy import Publisher
-from utils import upload_image
+from utils.image_uploader import upload_image_to_r2
 
 load_dotenv()
 
@@ -79,13 +79,9 @@ def generate_food_image(idea, post):
             break
     
     if image_bytes:
-        # file_name = f"{idea.replace(' ', '-').lower()}-{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
-        response = upload_image(image_bytes)
-        if response and "image_url" in response:
-            url = response["image_url"]
-            url = upload_image(image_bytes)
-        return url
-    
+        file_name = f"{idea.replace(' ', '-').lower()}-{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+        image_url = upload_image_to_r2(image_bytes, file_name)
+        return image_url
     return None
 
 def generate_blog_post_idea():

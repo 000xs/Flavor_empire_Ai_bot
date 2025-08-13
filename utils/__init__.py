@@ -2,8 +2,6 @@ import requests
 import os
 
 def upload_image(image_byte):
-
-    # The API endpoint URL
     url = "https://the-flavor-emperor-ai.vercel.app/api/upload-image"
 
     # Check if the image file exists
