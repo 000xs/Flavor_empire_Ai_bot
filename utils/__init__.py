@@ -1,40 +1,36 @@
-# import firebase_admin
-# from firebase_admin import credentials, storage
-# import os
+import requests
+import os
 
-# # Initialize Firebase once
-# if not firebase_admin._apps:
-#     SERVICE_ACC_PATH = 'travel-guide-ai-446403-firebase-adminsdk-fbsvc-33aab49731.json'
-#     cred = credentials.Certificate(SERVICE_ACC_PATH)
-#     firebase_admin.initialize_app(cred, {
-#         'storageBucket': 'travel-guide-ai-446403.appspot.com'
-#     })
+def upload_image(image_byte):
 
-# def upload_image(image_filename):
-#     # Ensure the image path is correct
-#     """
-#     Uploads an image file to Firebase Storage.
+    # The API endpoint URL
+    url = "https://the-flavor-emperor-ai.vercel.app/api/upload-image"
 
-#     Args:
-#         image_filename (str): The name of the image file to upload.
+    # Check if the image file exists
+    if image_byte is None:
+        print(f"Error: Image data file not found  ")
+    else:
+         
 
-#     Returns:
-#         str: The public URL of the uploaded image.
-#     """
+        # Set the headers
+        headers = {
+            "Content-Type": "application/octet-stream"
+        }
 
-#     image_path = os.path.join(os.getcwd(), image_filename)
+        try:
+            # Send the POST request with the image bytes as the body
+            response = requests.post(url, data=image_byte, headers=headers)
 
-#     # Get Firebase Storage bucket
-#     bucket = storage.bucket()
-#     blob = bucket.blob(f"uploads/{image_filename}")  # Folder 'uploads/' in bucket
-#     blob.upload_from_filename(image_path)
+            # Check the response
+            if response.status_code == 200:
+                print("Image uploaded successfully!")
+                print("Response JSON:", response.json())
+            else:
+                print(f"Error uploading image. Status code: {response.status_code}")
+                try:
+                    print("Error response:", response.json())
+                except requests.exceptions.JSONDecodeError:
+                    print("Error response:", response.text)
 
-#     # Make it public (optional)
-#     blob.make_public()
-
-#     print("✅ Upload successful!")
-#     print("🔗 Public URL:", blob.public_url)
-#     return blob.public_url
-"""
-init
-"""
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
