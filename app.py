@@ -76,11 +76,11 @@ app = Flask(__name__)
         
 #         if image_bytes:
 #             break
-#     # image date as an image and uplode to cloud bucket 
+# image date as an image and uplode to cloud bucket 
     
     
     
-# #     return uplode_image(image_bytes)
+#     return uplode_image(image_bytes)
 
 def generate_blog_post_idea():
     zai_api_key = os.getenv("ZAI_API_KEY")
