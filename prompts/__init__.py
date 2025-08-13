@@ -56,7 +56,7 @@ A step-by-step numbered list explaining how to prepare the recipe.
 ## Tips  
 (Optional) 1–3 helpful cooking tips or serving suggestions.
 
-add CTA as lin [DOWNLOAD](https://www.google.com) , dowlode reipe like some , recipe post incleu minmum 2 cta buttons
+add CTA as lin [DOWNLOAD](https://enrageperplexparable.com/f3i1jxxx?key=0ec94d1ae3c0b6c8921f343d4f86ee0c) , dowlode reipe like some , recipe post incleu minmum 2 cta buttons
 Only use well-known recipe types and avoid inventing new dishes.
 Do an seo Reaserch and use key words prases add this Post. 
 Use Emojis.
