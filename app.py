@@ -202,9 +202,7 @@ def scheduled_call():
         try:
             data, count = supabase.table('tasks').insert({
                 "title": idea,
-                "content": post_content,
-                "image_url": image_url,
-                "published": False # Assuming 'published' column exists, if not, remove this line
+                "image_url": image_url
             }).execute()
         except Exception as e:
             print(f"❌ Error saving to Supabase: {e}")
@@ -220,11 +218,13 @@ def scheduled_call():
 
         if result:
             print("\n🎉 Blog post published successfully!")
-            # Update published status in Supabase (if 'published' column exists)
+            # Update post_url in Supabase
             try:
-                supabase.table('tasks').update({"published": True}).eq("title", idea).execute()
+                post_url = result.get('url') # Assuming the result from publish_hash_node contains the URL
+                if post_url:
+                    supabase.table('tasks').update({"post_url": post_url}).eq("title", idea).execute()
             except Exception as e:
-                print(f"❌ Error updating published status in Supabase: {e}")
+                print(f"❌ Error updating post_url in Supabase: {e}")
 
             return jsonify({
                 "message": "Blog post published successfully!",

@@ -33,41 +33,46 @@
             const postsContainer = document.getElementById('posts-container');
 
             async function fetchPosts() {
+                postsContainer.innerHTML = '<div class="loader"></div>'; // Show loader while fetching
                 try {
                     const response = await fetch('/api/posts');
                     if (!response.ok) {
-                        throw new Error('Failed to fetch posts');
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    const responseData = await response.json();
-                    
-                    // Supabase returns data as [data, count]
-                    const posts = responseData[0]; 
+                    const posts = await response.json();
+
+                    if (!Array.isArray(posts)) {
+                        // If it's not an array, it might be an error object from Flask's jsonify({"error": ...})
+                        if (posts && posts.error) {
+                            throw new Error(`Server error: ${posts.error}`);
+                        }
+                        throw new Error("Invalid data format received from server. Expected an array of posts.");
+                    }
 
                     postsContainer.innerHTML = ''; // Clear existing posts
-                    if (posts && posts.length > 0) {
+                    if (posts.length > 0) {
                         posts.forEach(post => {
                             const postElement = document.createElement('div');
                             postElement.classList.add('post-card');
                             postElement.innerHTML = `
                                 <h3>${post.title}</h3>
-                                <p><strong>Status:</strong> ${post.published ? 'Published' : 'Draft'}</p>
-                                ${post.image_url ? `<img src="${post.image_url}" alt="${post.title}" style="max-width: 100%; height: auto; margin-top: 10px;">` : ''}
+                                ${post.post_url ? `<p><a href="${post.post_url}" target="_blank">View Published Post</a></p>` : '<p>Not published yet.</p>'}
+                                ${post.image_url ? `<img src="${post.image_url}" alt="${post.title}" style="max-width: 100%; height: auto; margin-top: 10px; border-radius: 5px;">` : ''}
                             `;
                             postsContainer.appendChild(postElement);
                         });
                     } else {
-                        postsContainer.innerHTML = '<p>No posts found.</p>';
+                        postsContainer.innerHTML = '<p>No tasks found. Create one to get started!</p>';
                     }
                 } catch (error) {
-                    console.error('Error fetching posts:', error);
-                    postsContainer.innerHTML = `<p class="error-message">Error loading posts: ${error.message}. Please ensure Supabase is configured correctly and the 'posts' table exists.</p>`;
+                    console.error('Error fetching tasks:', error);
+                    postsContainer.innerHTML = `<p class="error-message">Error loading tasks: ${error.message}. Please ensure Supabase is configured correctly and the 'tasks' table exists.</p>`;
                 }
             }
 
             async function createPost() {
                 createPostBtn.disabled = true;
-                createPostBtn.textContent = 'Creating Post...';
-                postsContainer.innerHTML = '<p>Generating new post, please wait...</p>'; // Show loading message
+                createPostBtn.innerHTML = '<div class="loader" style="width: 20px; height: 20px; border-width: 3px; margin: 0 auto;"></div>';
 
                 try {
                     const response = await fetch('/api/scheduled-call');
@@ -78,15 +83,14 @@
                     }
                     
                     console.log('Post creation result:', result);
-                    alert('Blog post created successfully!'); // Success message
-                    await fetchPosts(); // Refresh the posts list
+                    // No alert, just refresh the list to show the new post
+                    await fetchPosts();
                 } catch (error) {
                     console.error('Error creating post:', error);
                     alert(`Failed to create post: ${error.message}. Check console for details.`);
-                    postsContainer.innerHTML = `<p class="error-message">Failed to create post: ${error.message}</p>`; // Show error message
                 } finally {
                     createPostBtn.disabled = false;
-                    createPostBtn.textContent = 'Create New Blog Post';
+                    createPostBtn.innerHTML = 'Create New Blog Post';
                 }
             }
 
