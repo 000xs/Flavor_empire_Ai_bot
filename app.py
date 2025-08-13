@@ -200,11 +200,11 @@ def scheduled_call():
 
         # Save to Supabase
         try:
-            data, count = supabase.table('posts').insert({
+            data, count = supabase.table('tasks').insert({
                 "title": idea,
                 "content": post_content,
                 "image_url": image_url,
-                "published": False
+                "published": False # Assuming 'published' column exists, if not, remove this line
             }).execute()
         except Exception as e:
             print(f"❌ Error saving to Supabase: {e}")
@@ -220,9 +220,9 @@ def scheduled_call():
 
         if result:
             print("\n🎉 Blog post published successfully!")
-            # Update published status in Supabase
+            # Update published status in Supabase (if 'published' column exists)
             try:
-                supabase.table('posts').update({"published": True}).eq("title", idea).execute()
+                supabase.table('tasks').update({"published": True}).eq("title", idea).execute()
             except Exception as e:
                 print(f"❌ Error updating published status in Supabase: {e}")
 
