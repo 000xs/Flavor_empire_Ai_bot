@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import os
 import requests
 import json
@@ -8,10 +8,16 @@ from dotenv import load_dotenv
 from prompts import new_blog_post_idea, blog_post_prompt, image_prompt
 from Notifiy import Publisher
 from utils.image_uploader import upload_image_to_r2
+from supabase import create_client, Client
 
 load_dotenv()
 
 app = Flask(__name__)
+
+# Supabase setup
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_ANON_KEY")
+supabase: Client = create_client(url, key)
 
 def generate_food_image(idea, post):
     """
@@ -154,7 +160,15 @@ def generate_blog_post(idea):
 
 @app.route("/")
 def home():
-    return "Server is running"
+    return render_template("index.html")
+
+@app.route("/api/posts", methods=["GET"])
+def get_posts():
+    try:
+        data, count = supabase.table('tasks').select('*').execute()
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 @app.route("/api/scheduled-call", methods=["GET"])
 def scheduled_call():
@@ -169,32 +183,49 @@ def scheduled_call():
         print(f"Generated blog post idea: {idea}")
 
         # Generate blog post
-        post = generate_blog_post(idea)
-        if not post:
+        post_content = generate_blog_post(idea)
+        if not post_content:
             return jsonify({
                 "error": "Failed to generate blog post content"
             }), HTTPStatus.INTERNAL_SERVER_ERROR
 
         print("Generated blog post:")
-        print(post)
+        print(post_content)
 
         # Generate and upload image
-        image_url = generate_food_image(idea, post)
+        image_url = generate_food_image(idea, post_content)
         if not image_url:
             print("⚠️ Could not generate image. Using a default.")
             image_url = "https://cdn.image.sniplyx.xyz/uploaded-image-20250813104033.jpg"
 
+        # Save to Supabase
+        try:
+            data, count = supabase.table('posts').insert({
+                "title": idea,
+                "content": post_content,
+                "image_url": image_url,
+                "published": False
+            }).execute()
+        except Exception as e:
+            print(f"❌ Error saving to Supabase: {e}")
+            return jsonify({"error": f"Failed to save to Supabase: {str(e)}"}), HTTPStatus.INTERNAL_SERVER_ERROR
 
         # Publish blog post
         publisher = Publisher()
         result = publisher.publish_hash_node(
-            content=post,
+            content=post_content,
             title=idea,
             image_url=image_url,
         )
 
         if result:
             print("\n🎉 Blog post published successfully!")
+            # Update published status in Supabase
+            try:
+                supabase.table('posts').update({"published": True}).eq("title", idea).execute()
+            except Exception as e:
+                print(f"❌ Error updating published status in Supabase: {e}")
+
             return jsonify({
                 "message": "Blog post published successfully!",
                 "data": result
